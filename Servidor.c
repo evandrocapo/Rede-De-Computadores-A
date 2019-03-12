@@ -12,7 +12,7 @@
 */
 void main(int argc, char *argv[])
 {
-	int sockint,s, namelen, client_address_size, teste;
+	int sockint,s, namelen, client_address_size, teste, guardar;
 	long lSize;
 	struct sockaddr_in client, server;
 	char buf_rec[200], ret[2001];
@@ -76,18 +76,13 @@ do{
 	
 
   	rewind (p); // volta o arquivo no começo
-	int guardar = fread (ret,1,lSize,p);
-	//fread(ret, sizeof(char), 10, p);
+	guardar = fread (ret,1,lSize,p);
 
 	if(guardar > 2000){ 
 	guardar = 2000;
-	ret[2000] = '\n';
-	ret[2001] = '\0';
+	ret[1999] = '\n';
+	ret[2000] = '\0';
 	}
-
-	// for(int k =0; k < strlen(ret)+1;k++){
-	// 	printf("%c", ret[k]);
-	// }
 
 	if (sendto(s, ret, guardar+1, 0, (struct sockaddr *)&client, client_address_size) < 0)
 	{
@@ -100,7 +95,6 @@ do{
 	* e a porta do cliente
 	*/
 	printf("> Recebido o comando %s...\n",buf_rec);
-	printf("Quantidade: %i\n", guardar);
 	/*
 	* Fecha o socket.
 	*/

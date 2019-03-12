@@ -10,7 +10,7 @@
 /* Cliente UDP */
 void main(int argc, char *argv[])
 {
-	int s, server_address_size;
+	int s, server_address_size, len_rec;
 	unsigned short port;
 	struct sockaddr_in server;
 	char buf_send[200], buf_rec[2001], msg[201];
@@ -54,9 +54,10 @@ void main(int argc, char *argv[])
 		}
 
 		if(strcmp(msg, "exit") != 0){
-			memcpy(buf_send, msg, strlen(msg));
-			strcat(buf_send, "\0");
+			memcpy(buf_send, msg, strlen(msg)+1);
 			//int msgLen = strlen(buf_send)+1;
+
+			printf("%s", buf_send);
 
 			/* Envia a mensagem no buffer para o servidor */
 			if (sendto(s, buf_send, strlen(buf_send)+1, 0, (struct sockaddr *)&server, sizeof(server)) < 0)
@@ -73,10 +74,9 @@ void main(int argc, char *argv[])
 			server_address_size = sizeof(server);
 
 
-			int coco = sizeof(buf_rec);
-			printf("size of buf_rec %ld\n", coco);
+			int len_rec = sizeof(buf_rec);
 
-			if(recvfrom(s, buf_rec, coco, 0, (struct sockaddr *) &server,&server_address_size) < 0)
+			if(recvfrom(s, buf_rec, len_rec, 0, (struct sockaddr *) &server,&server_address_size) < 0)
 			{
 				perror("recvfrom()");
 				exit(1);
