@@ -85,11 +85,6 @@ void main(int argc, char *argv[])
 			//ret[2000] = '\0';
 			//}
 
-		if(strcmp(ret, "") == 0){
-			strcpy(ret, "O comando é invalido\n");
-			guardar = strlen(ret);
-		}
-
 		if (sendto(s, ret, guardar + 1, 0, (struct sockaddr *)&client, client_address_size) < 0)
 		{
 			perror("sendto()");
