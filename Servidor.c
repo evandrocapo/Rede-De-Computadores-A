@@ -12,7 +12,7 @@
 */
 void main(int argc, char *argv[])
 {
-	int sockint,s, namelen, client_address_size, teste, guardar;
+	int sockint, s, namelen, client_address_size, teste, guardar;
 	long lSize;
 	struct sockaddr_in client, server;
 	char buf_rec[200], ret[2001];
@@ -22,7 +22,6 @@ void main(int argc, char *argv[])
 	/*
 	* Cria um socket UDP (dgram).
 	*/
-do{
 	if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
 		perror("socket()");
@@ -37,9 +36,9 @@ do{
 	* IP = INADDDR_ANY -> faz com que o servidor se ligue em todos
 	* os endere�os IP
 	*/
-	server.sin_family      = AF_INET;   /* Tipo do endere�o             */
-	server.sin_port        = port;         /* Escolhe uma porta dispon�vel */
-	server.sin_addr.s_addr = INADDR_ANY;/* Endere�o IP do servidor      */
+	server.sin_family = AF_INET;		 /* Tipo do endere�o             */
+	server.sin_port = port;				 /* Escolhe uma porta dispon�vel */
+	server.sin_addr.s_addr = INADDR_ANY; /* Endere�o IP do servidor      */
 
 	/*
 	* Liga o servidor � porta definida anteriormente.
@@ -49,57 +48,63 @@ do{
 		perror("bind()");
 		exit(1);
 	}
-
 	/* Imprime qual porta foi utilizada. */
 	printf("> Porta utilizada: %d\n", ntohs(server.sin_port));
+	do
+	{
 
-	/*
+		/*
 	* Recebe uma mensagem do cliente.
 	* O endere�o do cliente ser� armazenado em "client".
 	*/
-	client_address_size = sizeof(client);
+		client_address_size = sizeof(client);
 
-	memset(buf_rec, 0, sizeof(buf_rec));
-	
-	if(recvfrom(s, buf_rec, sizeof(buf_rec), 0, (struct sockaddr *) &client,&client_address_size) < 0) // echo matheus echo joao = joaoeus
-	{
-		perror("recvfrom()");
-		exit(1);
-	}
+		memset(buf_rec, 0, sizeof(buf_rec));
 
-	memset(ret, 0, sizeof(ret));
+		if (recvfrom(s, buf_rec, sizeof(buf_rec), 0, (struct sockaddr *)&client, &client_address_size) < 0) // echo matheus echo joao = joaoeus
+		{
+			perror("recvfrom()");
+			exit(1);
+		}
 
-	p = popen(buf_rec, "r");
-	fseek (p , 0 , SEEK_END); // percorre o tamanho do arquivo
-  	lSize = ftell (p); // seta em lSize o tamanho do arquivo
+		memset(ret, 0, sizeof(ret));
 
-	
+		p = popen(buf_rec, "r");
 
-  	rewind (p); // volta o arquivo no começo
-	guardar = fread (ret,1,lSize,p);
+			//fseek (p , 0 , SEEK_END); // percorre o tamanho do arquivo
+			//lSize = ftell (p); // seta em lSize o tamanho do arquivo
 
-	if(guardar > 2000){ 
-	guardar = 2000;
-	ret[1999] = '\n';
-	ret[2000] = '\0';
-	}
+			//rewind (p); // volta o arquivo no começo
+			guardar = fread(ret, 1, 1999, p);
+			ret[guardar - 1] = '\n';
+			ret[guardar] = '\0';
 
-	if (sendto(s, ret, guardar+1, 0, (struct sockaddr *)&client, client_address_size) < 0)
-	{
-		perror("sendto()");
-		exit(2);
-	}
+			//if(guardar > 2000){
+			//guardar = 2000;
+			//ret[1999] = '\n';
+			//ret[2000] = '\0';
+			//}
 
-	/*
+		if(strcmp(ret, "") == 0){
+			strcpy(ret, "O comando é invalido\n");
+			guardar = strlen(ret);
+		}
+
+		if (sendto(s, ret, guardar + 1, 0, (struct sockaddr *)&client, client_address_size) < 0)
+		{
+			perror("sendto()");
+			exit(2);
+		}
+
+		/*
 	* Imprime a mensagem recebida, o endere�o IP do cliente
 	* e a porta do cliente
 	*/
-	printf("> Recebido o comando %s...\n",buf_rec);
-	/*
+		printf("> Recebido o comando %s...\n", buf_rec);
+		/*
 	* Fecha o socket.
 	*/
-	fclose(p);
+		fclose(p);
+	} while (1);
 	close(s);
-	
-}while(1);
 }
