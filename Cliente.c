@@ -57,8 +57,6 @@ void main(int argc, char *argv[])
 			memcpy(buf_send, msg, strlen(msg)+1);
 			//int msgLen = strlen(buf_send)+1;
 
-			printf("%s", buf_send);
-
 			/* Envia a mensagem no buffer para o servidor */
 			if (sendto(s, buf_send, strlen(buf_send)+1, 0, (struct sockaddr *)&server, sizeof(server)) < 0)
 			{
