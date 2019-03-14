@@ -1,3 +1,11 @@
+/*
+Agostinho Sanches de Araújo ----------------------------- RA: 16507915
+Evandro Douglas Capovilla Junior ------------------------ RA: 16023905
+Lucas Tenani Felix Martins ------------------------------ RA: 16105744
+Pedro Andrade Caccavaro --------------------------------- RA: 16124679
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,8 +24,8 @@ void main(int argc, char *argv[])
 	char buf_send[200], buf_rec[2001], msg[201];
 
 	/*
-	* O primeiro argumento (argv[1]) � o endere�o IP do servidor
-	* O segundo argumento (argv[2]) � a porta do servidor
+	* O primeiro argumento (argv[1]) é o endere�o IP do servidor
+	* O segundo argumento (argv[2]) é a porta do servidor
 	*/
 	if(argc != 3)
 	{
@@ -33,10 +41,10 @@ void main(int argc, char *argv[])
 		exit(1);
 	}
 
-	/* Define o endere�o IP e a porta do servidor */
-	server.sin_family      = AF_INET;            /* Tipo do endere�o         */
+	/* Define o endereço IP e a porta do servidor */
+	server.sin_family      = AF_INET;            /* Tipo do endereço         */
 	server.sin_port        = port;               /* Porta do servidor        */
-	server.sin_addr.s_addr = inet_addr(argv[1]); /* Endere�o IP do servidor  */
+	server.sin_addr.s_addr = inet_addr(argv[1]); /* Endereço IP do servidor  */
 
 
 	do
@@ -46,7 +54,7 @@ void main(int argc, char *argv[])
 		strtok(msg, "\n");
 		memset(buf_send,0,strlen(buf_send));
 
-		
+
 
 		if(strcmp(msg, "exit") == 0){
 			printf("Fechando\n");
@@ -55,7 +63,6 @@ void main(int argc, char *argv[])
 
 		if(strcmp(msg, "exit") != 0){
 			memcpy(buf_send, msg, strlen(msg)+1);
-			//int msgLen = strlen(buf_send)+1;
 
 			/* Envia a mensagem no buffer para o servidor */
 			if (sendto(s, buf_send, strlen(buf_send)+1, 0, (struct sockaddr *)&server, sizeof(server)) < 0)
@@ -66,7 +73,6 @@ void main(int argc, char *argv[])
 
 			fflush(stdin);
 
-			//printf("%d       %d\n", strlen(msg),msgLen);
 			memset(buf_send,0,strlen(buf_send));
 
 			server_address_size = sizeof(server);
@@ -86,6 +92,5 @@ void main(int argc, char *argv[])
 	}while(strcmp(msg, "exit") != 0);
 
 	/* Fecha o socket */
-	
 	close(s);
 }
