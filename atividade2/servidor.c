@@ -1,3 +1,10 @@
+/*
+Agostinho Sanches de Araújo ----------------------------- RA: 16507915
+Evandro Douglas Capovilla Junior ------------------------ RA: 16023905
+Lucas Tenani Felix Martins ------------------------------ RA: 16105744
+Pedro Andrade Caccavaro --------------------------------- RA: 16124679
+*/
+
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <stdlib.h>
