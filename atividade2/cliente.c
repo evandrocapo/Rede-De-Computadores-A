@@ -24,6 +24,7 @@ struct mensagem
 {
     char nome[20];
     char texto[80];
+    int ativo;
 };
 
 int main(int argc, char **argv)
@@ -34,6 +35,7 @@ int main(int argc, char **argv)
     struct hostent *hostnm;
     struct sockaddr_in server;
     int s, i;
+    char nome[20];
 
     struct mensagem msg;
     struct mensagem msg_total[10];
@@ -101,20 +103,24 @@ int main(int argc, char **argv)
         switch (opcao)
         {
         case 1:
-            
+
             printf("\nDigite seu nome: ");
             __fpurge(stdin);
             scanf("%s", msg.nome);
-            if(strlen(msg.nome) > 19){
+            if (strlen(msg.nome) > 19)
+            {
                 msg.nome[19] = '\0';
             }
 
             printf("Digite seu texto: ");
             __fpurge(stdin);
             scanf("%[^\n]", msg.texto);
-            if(strlen(msg.texto) > 79){
+            if (strlen(msg.texto) > 79)
+            {
                 msg.texto[79] = '\0';
             }
+
+            msg.ativo = 1;
 
             if (send(s, &msg, sizeof(msg), 0) < 0)
             {
@@ -144,16 +150,27 @@ int main(int argc, char **argv)
                 exit(6);
             }
 
-            for (i = 0; i < quant_msg; i++)
+            for (i = 0; i < 10; i++)
             {
-                printf("Mensagem %d\n", i + 1);
-                printf("Nome: %s\n", msg_total[i].nome);
-                printf("Mensagem: %s\n\n", msg_total[i].texto);
+                if (msg_total[i].ativo == 1)
+                {
+                    printf("Mensagem %d\n", i + 1);
+                    printf("Nome: %s\n", msg_total[i].nome);
+                    printf("Mensagem: %s\n\n", msg_total[i].texto);
+                }
             }
             break;
 
         case 3:
             printf("Removendo as mensagens do servidor!\n");
+
+            scanf("%s", nome);
+
+            if (send(s, nome, sizeof(nome), 0) < 0)
+            {
+                perror("Send()");
+                exit(5);
+            }
 
             if (recv(s, &quant_msg, sizeof(quant_msg), 0) < 0)
             {

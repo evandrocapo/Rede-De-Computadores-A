@@ -22,6 +22,7 @@ struct mensagem
 {
     char nome[20];
     char texto[80];
+    int ativo;
 };
 
 int main(int argc, char **argv)
@@ -31,9 +32,10 @@ int main(int argc, char **argv)
     char recvbuf[12];
     struct sockaddr_in client;
     struct sockaddr_in server;
-    int s;  /* Socket para aceitar conex�es       */
+    int s,i;  /* Socket para aceitar conex�es       */
     int ns; /* Socket conectado ao cliente        */
     int namelen;
+    char nome[20];
 
     int quant_msg = 0;
     struct mensagem msg[10];
@@ -159,6 +161,18 @@ int main(int argc, char **argv)
                 break;
             case 3:
                 printf("As mensagens foram apagadas\n");
+
+                if (recv(ns, nome, sizeof(nome), 0) == -1)
+                {
+                    perror("Recv()");
+                    exit(7);
+                }
+
+                for(i = 0; i < 20; i++){
+                    if(strcmp(msg[i].nome,nome)==0){
+                        msg[i].ativo = 0;
+                    }
+                }
 
                 strcpy(sendbuf, "As mensagens foram apagadas\n");
 
