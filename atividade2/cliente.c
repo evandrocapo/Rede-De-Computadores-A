@@ -164,7 +164,13 @@ int main(int argc, char **argv)
         case 3:
             printf("Removendo as mensagens do servidor!\n");
 
+            printf("Digite o nome: ");
+            __fpurge(stdin);
             scanf("%s", nome);
+            if (strlen(nome) > 19)
+            {
+                nome[19] = '\0';
+            }
 
             if (send(s, nome, sizeof(nome), 0) < 0)
             {
