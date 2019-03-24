@@ -3,17 +3,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * Cliente TCP
  */
-main(argc, argv)
-int argc;
-char **argv;
-{
+void main(int argc, char **argv){
     unsigned short port;       
     char sendbuf[12];              
     char recvbuf[12];              
@@ -22,8 +19,8 @@ char **argv;
     int s;                     
 
     /*
-     * O primeiro argumento (argv[1]) é o hostname do servidor.
-     * O segundo argumento (argv[2]) é a porta do servidor.
+     * O primeiro argumento (argv[1]) ï¿½ o hostname do servidor.
+     * O segundo argumento (argv[2]) ï¿½ a porta do servidor.
      */
     if (argc != 3)
     {
@@ -32,7 +29,7 @@ char **argv;
     }
 
     /*
-     * Obtendo o endereço IP do servidor
+     * Obtendo o endereï¿½o IP do servidor
      */
     hostnm = gethostbyname(argv[1]);
     if (hostnm == (struct hostent *) 0)
@@ -43,7 +40,7 @@ char **argv;
     port = (unsigned short) atoi(argv[2]);
 
     /*
-     * Define o endereço IP e a porta do servidor
+     * Define o endereï¿½o IP e a porta do servidor
      */
     server.sin_family      = AF_INET;
     server.sin_port        = htons(port);
@@ -58,14 +55,14 @@ char **argv;
         exit(3);
     }
 
-    /* Estabelece conexão com o servidor */
+    /* Estabelece conexï¿½o com o servidor */
     if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
         perror("Connect()");
         exit(4);
     }
 
-    strcpy(sendbuf, "Requisição");
+    strcpy(sendbuf, "Requisito");
 
     /* Envia a mensagem no buffer de envio para o servidor */
     if (send(s, sendbuf, strlen(sendbuf)+1, 0) < 0)
@@ -75,7 +72,7 @@ char **argv;
     }
     printf("Mensagem enviada ao servidor: %s\n", sendbuf);
 
-    /* Recebe a mensagem do servidor no buffer de recepção */
+    /* Recebe a mensagem do servidor no buffer de recepï¿½ï¿½o */
     if (recv(s, recvbuf, sizeof(recvbuf), 0) < 0)
     {
         perror("Recv()");
@@ -88,7 +85,6 @@ char **argv;
 
     printf("Cliente terminou com sucesso.\n");
     exit(0);
-
 }
 
 

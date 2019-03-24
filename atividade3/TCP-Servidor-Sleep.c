@@ -5,14 +5,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * Servidor TCP
  */
-main(argc, argv)
-int argc;
-char **argv;
-{
+void main(int argc,char **argv){
     unsigned short port;       
     char sendbuf[12];              
     char recvbuf[12];              
@@ -110,6 +108,7 @@ char **argv;
 	  /* Fecha o socket conectado ao cliente */
 	  close(ns);
     }
+
 }
 
 

@@ -1,151 +1,176 @@
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+struct sigaction sigchld_action = {
+  .sa_handler = SIG_DFL,
+  .sa_flags = SA_NOCLDWAIT
+};
 
 /*
  * Servidor TCP
  */
-main(argc, argv)
-int argc;
-char **argv;
+void main(int argc, char **argv)
 {
-    unsigned short port;       
-    char sendbuf[12];              
-    char recvbuf[12];              
-    struct sockaddr_in client; 
-    struct sockaddr_in server; 
-    int s;                     /* Socket para aceitar conexões       */
-    int ns;                    /* Socket conectado ao cliente        */
-    int namelen;
-    pid_t pid, fid;
-    
-    /*
-     * O primeiro argumento (argv[1]) é a porta
-     * onde o servidor aguardará por conexões
+	unsigned short port;
+	char sendbuf[12];
+	char recvbuf[12];
+	struct sockaddr_in client;
+	struct sockaddr_in server;
+	int s;	/* Socket para aceitar conexï¿½es       */
+	int ns; /* Socket conectado ao cliente        */
+	int namelen;
+	pid_t pid, fid;
+
+	if(sigaction(SIGCHLD, &sigchld_action, NULL) == -1){
+			perror("SetSigChild()");
+			exit(200);
+	}	
+
+	/*
+     * O primeiro argumento (argv[1]) ï¿½ a porta
+     * onde o servidor aguardarï¿½ por conexï¿½es
      */
-    if (argc != 2)
-    {
-	  fprintf(stderr, "Use: %s porta\n", argv[0]);
-	  exit(1);
-    }
+	if (argc != 2)
+	{
+		fprintf(stderr, "Use: %s porta\n", argv[0]);
+		exit(1);
+	}
 
-    port = (unsigned short) atoi(argv[1]);
+	port = (unsigned short)atoi(argv[1]);
 
-    /*
-     * Cria um socket TCP (stream) para aguardar conexões
+	/*
+     * Cria um socket TCP (stream) para aguardar conexï¿½es
      */
-    if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-    {
-	  perror("Socket()");
-	  exit(2);
-    }
+	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("Socket()");
+		exit(2);
+	}
 
-   /*
-    * Define a qual endereço IP e porta o servidor estará ligado.
+	/*
+    * Define a qual endereï¿½o IP e porta o servidor estarï¿½ ligado.
     * IP = INADDDR_ANY -> faz com que o servidor se ligue em todos
-    * os endereços IP
+    * os endereï¿½os IP
     */
-    server.sin_family = AF_INET;   
-    server.sin_port   = htons(port);       
-    server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	server.sin_addr.s_addr = INADDR_ANY;
 
-    /*
-     * Liga o servidor à porta definida anteriormente.
+	/*
+     * Liga o servidor ï¿½ porta definida anteriormente.
      */
-    if (bind(s, (struct sockaddr *)&server, sizeof(server)) < 0)
-    {
-	perror("Bind()");
-	exit(3);
-    }
+	if (bind(s, (struct sockaddr *)&server, sizeof(server)) < 0)
+	{
+		perror("Bind()");
+		exit(3);
+	}
 
-    /*
-     * Prepara o socket para aguardar por conexões e
-     * cria uma fila de conexões pendentes.
+	/*
+     * Prepara o socket para aguardar por conexï¿½es e
+     * cria uma fila de conexï¿½es pendentes.
      */
-    if (listen(s, 1) != 0)
-    {
-	  perror("Listen()");
-	  exit(4);
-    }
+	if (listen(s, 1) != 0)
+	{
+		perror("Listen()");
+		exit(4);
+	}
 
-    while(1)
-    {
-	  /*
-	  * Aceita uma conexão e cria um novo socket através do qual
-	  * ocorrerá a comunicação com o cliente.
-	  */
-	  namelen = sizeof(client);
-	  if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
-	  {
-		perror("Accept()");
-		exit(5);
-	  }
-	  
-	  if ((pid = fork()) == 0) {
+	while (1)
+	{
 		/*
+	  * Aceita uma conexï¿½o e cria um novo socket atravï¿½s do qual
+	  * ocorrerï¿½ a comunicaï¿½ï¿½o com o cliente.
+	  */
+		namelen = sizeof(client);
+		if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
+		{
+			perror("Accept()");
+			exit(5);
+		}
+
+		// if(!kill(pid, 0)){
+		// 	printf("MAMA MINHA ROLA");
+		// }
+		// else{
+		// 	printf("MAMADO COM SUCESSO A MINHA ROLA");
+		// 	kill(pid, SIGKILL);
+		// }
+
+
+		if ((pid = fork()) == 0)
+		{
+			/*
 		 * Processo filho 
 		 */
-	      
-		/* Fecha o socket aguardando por conexões */
-		close(s);
 
-		/* Processo filho obtem seu próprio pid */
-		fid = getpid();
+			/* Fecha o socket aguardando por conexï¿½es */
+			close(s);
 
-		/* Recebe uma mensagem do cliente através do novo socket conectado */
-		if (recv(ns, recvbuf, sizeof(recvbuf), 0) == -1)
-		{
-		    perror("Recv()");
-		    exit(6);
-		}
-		
-		printf("[%d] Recebida a mensagem do endereço IP %s da porta %d\n", fid, inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-		printf("[%d] Mensagem recebida do cliente: %s\n", fid, recvbuf);
-		
-		printf("[%d] Aguardando 10 s ...\n", fid);
-		sleep(10);
-		
-		strcpy(sendbuf, "Resposta");
-		
-		/* Envia uma mensagem ao cliente através do socket conectado */
-		if (send(ns, sendbuf, strlen(sendbuf)+1, 0) < 0)
-		{
-		    perror("Send()");
-		    exit(7);
-		}
-		printf("[%d] Mensagem enviada ao cliente: %s\n", fid, sendbuf);
+			
 
-		/* Fecha o socket conectado ao cliente */
-		close(ns);
+			/* Processo filho obtem seu prï¿½prio pid */
+			fid = getpid();
 
-		/* Processo filho termina sua execução */
-		printf("[%d] Processo filho terminado com sucesso.\n", fid);
-		exit(0);
-	  }
-	  else
-	  {  
-		/*
-		 * Processo pai 
-		 */
-		
-		if (pid > 0)
-		{
-		    printf("Processo filho criado: %d\n", pid);
+			/* Recebe uma mensagem do cliente atravï¿½s do novo socket conectado */
+			if (recv(ns, recvbuf, sizeof(recvbuf), 0) == -1)
+			{
+				perror("Recv()");
+				exit(6);
+			}
 
-		    /* Fecha o socket conectado ao cliente */
-		    close(ns);
+			printf("[%d] Recebida a mensagem do endereï¿½o IP %s da porta %d\n", fid, inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+			printf("[%d] Mensagem recebida do cliente: %s\n", fid, recvbuf);
+
+			printf("[%d] Aguardando 10 s ...\n", fid);
+			sleep(10);
+
+			strcpy(sendbuf, "Resposta");
+
+			/* Envia uma mensagem ao cliente atravï¿½s do socket conectado */
+			if (send(ns, sendbuf, strlen(sendbuf) + 1, 0) < 0)
+			{
+				perror("Send()");
+				exit(7);
+			}
+			printf("[%d] Mensagem enviada ao cliente: %s\n", fid, sendbuf);
+
+			/* Fecha o socket conectado ao cliente */
+			close(ns);
+
+			/* Processo filho termina sua execuï¿½ï¿½o */
+			printf("[%d] Processo filho terminado com sucesso.\n", fid);
+
+			exit(0);
 		}
 		else
 		{
-		    perror("Fork()");
-		    exit(7);	      
+			/*
+		 * Processo pai 
+		 */
+
+			if (pid > 0)
+			{
+				printf("Processo filho criado: %d\n", pid);
+
+				/* Fecha o socket conectado ao cliente */
+				close(ns);
+			}
+			else
+			{
+				perror("Fork()");
+				exit(7);
+			}
 		}
-	  }
-    }
+		// while(waitpid(-1,NULL,WNOHANG) == 1){
+		// 	printf("Um zumbi foi morto");
+		// }
+	}
 }
-
-
