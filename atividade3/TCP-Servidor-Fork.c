@@ -8,11 +8,22 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <semaphore.h>
+#include <sys/shm.h>
 
 struct sigaction sigchld_action = {
-  .sa_handler = SIG_DFL,
-  .sa_flags = SA_NOCLDWAIT
+		.sa_handler = SIG_DFL,
+		.sa_flags = SA_NOCLDWAIT};
+
+struct mensagem
+{
+	char nome[20];
+	char texto[80];
+	int ativo;
 };
+
+int sem_post(sem_t *semaphore);
+int sem_wait(sem_t *semaphore);
 
 /*
  * Servidor TCP
@@ -20,19 +31,32 @@ struct sigaction sigchld_action = {
 void main(int argc, char **argv)
 {
 	unsigned short port;
-	char sendbuf[12];
-	char recvbuf[12];
 	struct sockaddr_in client;
 	struct sockaddr_in server;
-	int s;	/* Socket para aceitar conex�es       */
-	int ns; /* Socket conectado ao cliente        */
+	int s, i; /* Socket para aceitar conex�es       */
+	int ns;		/* Socket conectado ao cliente        */
 	int namelen;
 	pid_t pid, fid;
+	char nome[20], sendbuf[100];
+	int shm_id;
 
-	if(sigaction(SIGCHLD, &sigchld_action, NULL) == -1){
-			perror("SetSigChild()");
-			exit(200);
-	}	
+	struct mensagem msg;
+	struct mensagem msg_total[10];
+	int quant_msg, opcao;
+
+	if (sigaction(SIGCHLD, &sigchld_action, NULL) == -1)
+	{
+		perror("SetSigChild()");
+		exit(200);
+	}
+
+	shm_id = shmget(IPC_PRIVATE, sizeof(struct mensagem)*10, IPC_CREAT | 0666);
+	if (shm_id < 0)
+	{
+		printf("shmget error\n");
+	}
+
+	struct mensagem *shrd = (struct mensagem *)shmat(shm_id, NULL, 0);
 
 	/*
      * O primeiro argumento (argv[1]) � a porta
@@ -83,6 +107,8 @@ void main(int argc, char **argv)
 		exit(4);
 	}
 
+	quant_msg = 0;
+
 	while (1)
 	{
 		/*
@@ -96,15 +122,6 @@ void main(int argc, char **argv)
 			exit(5);
 		}
 
-		// if(!kill(pid, 0)){
-		// 	printf("MAMA MINHA ROLA");
-		// }
-		// else{
-		// 	printf("MAMADO COM SUCESSO A MINHA ROLA");
-		// 	kill(pid, SIGKILL);
-		// }
-
-
 		if ((pid = fork()) == 0)
 		{
 			/*
@@ -114,35 +131,123 @@ void main(int argc, char **argv)
 			/* Fecha o socket aguardando por conex�es */
 			close(s);
 
-			
-
 			/* Processo filho obtem seu pr�prio pid */
 			fid = getpid();
 
-			/* Recebe uma mensagem do cliente atrav�s do novo socket conectado */
-			if (recv(ns, recvbuf, sizeof(recvbuf), 0) == -1)
+			do
 			{
-				perror("Recv()");
-				exit(6);
-			}
 
-			printf("[%d] Recebida a mensagem do endere�o IP %s da porta %d\n", fid, inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-			printf("[%d] Mensagem recebida do cliente: %s\n", fid, recvbuf);
+				if (recv(ns, &opcao, sizeof(opcao), 0) == -1)
+				{
+					perror("Recv()");
+					exit(6);
+				}
 
-			printf("[%d] Aguardando 10 s ...\n", fid);
-			sleep(10);
+				switch (opcao)
+				{
+				case 1:
 
-			strcpy(sendbuf, "Resposta");
+					//semaforo INIT
+					//fila REC
 
-			/* Envia uma mensagem ao cliente atrav�s do socket conectado */
-			if (send(ns, sendbuf, strlen(sendbuf) + 1, 0) < 0)
-			{
-				perror("Send()");
-				exit(7);
-			}
-			printf("[%d] Mensagem enviada ao cliente: %s\n", fid, sendbuf);
+					if (recv(ns, &msg, sizeof(msg), 0) == -1)
+					{
+						perror("Recv()");
+						exit(7);
+					}
+					printf("\nMensagem do Cliente: %s\n", msg.nome);
+					printf("Mensagem recebida do cliente: %s\n", msg.texto);
 
-			/* Fecha o socket conectado ao cliente */
+					shrd[quant_msg] = msg;
+					// strcpy(shrd[quant_msg].nome, msg.nome);
+					// strcpy(shrd[quant_msg].texto, msg.texto);
+					quant_msg = quant_msg + 1;
+
+					//fila SEND
+					//semaforo END
+
+					strcpy(sendbuf, "Incluso com sucesso!\n");
+
+					if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
+					{
+						perror("Send()");
+						exit(5);
+					}
+
+					printf("%s\n", sendbuf);
+					fflush(stdout);
+
+					break;
+				case 2:
+					printf("Enviando as mensagens para o cliente");
+
+					//semafaro INIT
+					//fila REC
+
+					if (send(ns, &quant_msg, sizeof(quant_msg), 0) < 0)
+					{
+						perror("Send()");
+						exit(5);
+					}
+
+					printf("\nMensagem enviada do Cliente: %s\n", shrd[0].nome);
+					printf("Mensagem enviada do cliente: %s\n", shrd[0].texto);
+
+					if (send(ns, shrd, sizeof(struct mensagem) * 10, 0) < 0)
+					{
+						perror("Send()");
+						exit(5);
+					}
+
+					//semaforo END
+
+					break;
+				case 3:
+					//semaforo INIT
+					//fila REC
+
+					printf("As mensagens foram apagadas\n");
+
+					if (recv(ns, nome, sizeof(nome), 0) == -1)
+					{
+						perror("Recv()");
+						exit(7);
+					}
+
+					// for (i = 0; i < 20; i++)
+					// {
+					// 	if (strcmp(msg[i].nome, nome) == 0)
+					// 	{
+					// 		msg[i].ativo = 0;
+					// 	}
+					// }
+
+					//fila SEND
+					//semaforo END
+
+					// quant_msg = 0;
+
+					// if (send(ns, &quant_msg, sizeof(quant_msg), 0) < 0)
+					// {
+
+					// 	perror("Send()");
+					// 	exit(5);
+					// }
+
+					strcpy(sendbuf, "As mensagens foram apagadas\n");
+
+					if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
+					{
+
+						perror("Send()");
+						exit(5);
+					}
+					break;
+				case 4:
+					printf("\nA conexão está sendo encerrada!\n");
+					break;
+				}
+			} while (opcao != 4);
 			close(ns);
 
 			/* Processo filho termina sua execu��o */
@@ -153,9 +258,8 @@ void main(int argc, char **argv)
 		else
 		{
 			/*
-		 * Processo pai 
-		 */
-
+		* Processo pai 
+		*/
 			if (pid > 0)
 			{
 				printf("Processo filho criado: %d\n", pid);
@@ -169,8 +273,5 @@ void main(int argc, char **argv)
 				exit(7);
 			}
 		}
-		// while(waitpid(-1,NULL,WNOHANG) == 1){
-		// 	printf("Um zumbi foi morto");
-		// }
 	}
 }
