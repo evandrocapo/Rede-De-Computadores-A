@@ -139,18 +139,15 @@ void main(int argc, char **argv)
                 exit(6);
             }
 
-            // for (i = 0; i < 10; i++)
-            // {
-            //     if (msg_total[i].ativo == 1)
-            //     {
-            //         printf("Mensagem %d\n", i + 1);
-            //         printf("Nome: %s\n", msg_total[i].nome);
-            //         printf("Mensagem: %s\n\n", msg_total[i].texto);
-            //     }
-            // }
-
-            printf("%s\n", msg_total[0].nome);
-            printf("%s\n", msg_total[0].texto);
+            for (i = 0; i < 10; i++)
+            {
+                if (msg_total[i].ativo == 1)
+                {
+                    printf("Mensagem %d\n", i + 1);
+                    printf("Nome: %s\n", msg_total[i].nome);
+                    printf("Mensagem: %s\n\n", msg_total[i].texto);
+                }
+            }
 
             break;
 

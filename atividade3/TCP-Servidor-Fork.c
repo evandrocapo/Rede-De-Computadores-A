@@ -9,7 +9,12 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 #include <sys/shm.h>
+#include <fcntl.h>
+#include <sys/sem.h>
+
+#define SEM_KEY 0x2034
 
 struct sigaction sigchld_action = {
 		.sa_handler = SIG_DFL,
@@ -25,6 +30,11 @@ struct mensagem
 int sem_post(sem_t *semaphore);
 int sem_wait(sem_t *semaphore);
 
+int g_sem_id;
+
+struct sembuf g_sem_op1[1];
+struct sembuf g_sem_op2[1];
+
 /*
  * Servidor TCP
  */
@@ -39,10 +49,32 @@ void main(int argc, char **argv)
 	pid_t pid, fid;
 	char nome[20], sendbuf[100];
 	int shm_id;
+	sem_t *sem;
 
 	struct mensagem msg;
 	struct mensagem msg_total[10];
 	int quant_msg, opcao;
+
+	g_sem_op1[0].sem_num = 0;
+	g_sem_op1[0].sem_op = -1;
+	g_sem_op1[0].sem_flg = 0;
+
+	g_sem_op2[0].sem_num = 0;
+	g_sem_op2[0].sem_op = 1;
+	g_sem_op2[0].sem_flg = 0;
+
+	//criando semaforo
+	if((g_sem_id = semget (SEM_KEY, 1, IPC_CREAT | 0666))== -1)
+	{
+		fprintf(stderr,"semget() falhou, impossivel criar o semaforo");
+		exit(201);
+	}
+
+	if(semop(g_sem_id,g_sem_op2,1)== -1)
+	{
+		fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+		exit(202);
+	}
 
 	if (sigaction(SIGCHLD, &sigchld_action, NULL) == -1)
 	{
@@ -109,6 +141,8 @@ void main(int argc, char **argv)
 
 	quant_msg = 0;
 
+	//sem = sem_open("sem", O_CREAT | O_EXCL, 0644, 1 );
+
 	while (1)
 	{
 		/*
@@ -149,6 +183,11 @@ void main(int argc, char **argv)
 
 					//semaforo INIT
 					//fila REC
+					//sem_wait(sem);
+					if(semop(g_sem_id,g_sem_op1,1)== -1){
+							fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+							exit(1);
+						}
 
 					if (recv(ns, &msg, sizeof(msg), 0) == -1)
 					{
@@ -158,12 +197,17 @@ void main(int argc, char **argv)
 					printf("\nMensagem do Cliente: %s\n", msg.nome);
 					printf("Mensagem recebida do cliente: %s\n", msg.texto);
 
-					shrd[quant_msg] = msg;
-					// strcpy(shrd[quant_msg].nome, msg.nome);
-					// strcpy(shrd[quant_msg].texto, msg.texto);
-					quant_msg = quant_msg + 1;
+					for(int i = 0; i < 10; i++)
+					{
+						if(shrd[i].ativo == 0)
+						{
+							shrd[i] = msg;
+							break;
+						}
+					}
+					//sem_post(sem);
 
-					//fila SEND
+					
 					//semaforo END
 
 					strcpy(sendbuf, "Incluso com sucesso!\n");
@@ -173,7 +217,11 @@ void main(int argc, char **argv)
 						perror("Send()");
 						exit(5);
 					}
-
+					if(semop(g_sem_id,g_sem_op2,1)== -1)
+					{
+						fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+						exit(1);
+					}
 					printf("%s\n", sendbuf);
 					fflush(stdout);
 
@@ -245,10 +293,12 @@ void main(int argc, char **argv)
 					break;
 				case 4:
 					printf("\nA conexão está sendo encerrada!\n");
+					
 					break;
 				}
 			} while (opcao != 4);
 			close(ns);
+							
 
 			/* Processo filho termina sua execu��o */
 			printf("[%d] Processo filho terminado com sucesso.\n", fid);
@@ -260,6 +310,8 @@ void main(int argc, char **argv)
 			/*
 		* Processo pai 
 		*/
+			
+
 			if (pid > 0)
 			{
 				printf("Processo filho criado: %d\n", pid);
@@ -270,6 +322,11 @@ void main(int argc, char **argv)
 			else
 			{
 				perror("Fork()");
+				// if(semctl(g_sem_id,0,IPC_RMID,0)== -1)
+					// 	{
+					// 		fprintf(stderr,"impossivel remover semaforo");
+					// 		exit(1);
+					// 	}
 				exit(7);
 			}
 		}
