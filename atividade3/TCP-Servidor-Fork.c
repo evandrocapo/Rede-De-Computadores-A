@@ -34,7 +34,17 @@ int g_sem_id;
 
 struct sembuf g_sem_op1[1];
 struct sembuf g_sem_op2[1];
-
+void  INThandler(int sig)
+{
+	if(semctl(g_sem_id,0,IPC_RMID,0)== -1)
+ 	{
+			fprintf(stderr,"impossivel remover semaforo");
+	 		exit(1);
+ 	}
+     
+  exit(0);
+     
+}
 /*
  * Servidor TCP
  */
@@ -149,6 +159,9 @@ void main(int argc, char **argv)
 	  * Aceita uma conex�o e cria um novo socket atrav�s do qual
 	  * ocorrer� a comunica��o com o cliente.
 	  */
+
+	 	signal(SIGINT, INThandler);
+
 		namelen = sizeof(client);
 		if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
 		{
@@ -183,7 +196,6 @@ void main(int argc, char **argv)
 
 					//semaforo INIT
 					//fila REC
-					//sem_wait(sem);
 					if(semop(g_sem_id,g_sem_op1,1)== -1){
 							fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
 							exit(1);
@@ -205,7 +217,7 @@ void main(int argc, char **argv)
 							break;
 						}
 					}
-					//sem_post(sem);
+
 
 					
 					//semaforo END
@@ -232,6 +244,11 @@ void main(int argc, char **argv)
 					//semafaro INIT
 					//fila REC
 
+						if(semop(g_sem_id,g_sem_op1,1)== -1){
+							fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+							exit(1);
+						}
+
 					if (send(ns, &quant_msg, sizeof(quant_msg), 0) < 0)
 					{
 						perror("Send()");
@@ -241,10 +258,17 @@ void main(int argc, char **argv)
 					printf("\nMensagem enviada do Cliente: %s\n", shrd[0].nome);
 					printf("Mensagem enviada do cliente: %s\n", shrd[0].texto);
 
+					
 					if (send(ns, shrd, sizeof(struct mensagem) * 10, 0) < 0)
 					{
 						perror("Send()");
 						exit(5);
+					}
+
+					if(semop(g_sem_id,g_sem_op2,1)== -1)
+					{
+						fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+						exit(1);
 					}
 
 					//semaforo END
@@ -253,7 +277,10 @@ void main(int argc, char **argv)
 				case 3:
 					//semaforo INIT
 					//fila REC
-
+						if(semop(g_sem_id,g_sem_op1,1)== -1){
+							fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+							exit(1);
+						}
 					printf("As mensagens foram apagadas\n");
 
 					if (recv(ns, nome, sizeof(nome), 0) == -1)
@@ -272,7 +299,11 @@ void main(int argc, char **argv)
 
 					//fila SEND
 					//semaforo END
-
+					if(semop(g_sem_id,g_sem_op2,1)== -1)
+					{
+						fprintf(stderr,"semop() falhou, impossivel iniciar o semaforo");
+						exit(1);
+					}
 					// quant_msg = 0;
 
 					// if (send(ns, &quant_msg, sizeof(quant_msg), 0) < 0)
@@ -322,11 +353,6 @@ void main(int argc, char **argv)
 			else
 			{
 				perror("Fork()");
-				// if(semctl(g_sem_id,0,IPC_RMID,0)== -1)
-					// 	{
-					// 		fprintf(stderr,"impossivel remover semaforo");
-					// 		exit(1);
-					// 	}
 				exit(7);
 			}
 		}
