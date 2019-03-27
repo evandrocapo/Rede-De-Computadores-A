@@ -219,12 +219,18 @@ void main(int argc, char **argv)
 						if (shrd[i].ativo == 0)
 						{
 							shrd[i] = msg;
+							strcpy(sendbuf, "Incluso com sucesso!\n");
 							break;
+						}
+						else{
+							if(i == 9 && shrd[i].ativo == 1){
+								strcpy(sendbuf, "A mensagem não foi inclusa!\n");
+								break;
+							}
 						}
 					}
 					//semaforo END
-					strcpy(sendbuf, "Incluso com sucesso!\n");
-
+					
 					if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
 					{
 						perror("Send()");
