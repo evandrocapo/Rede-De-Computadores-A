@@ -124,14 +124,7 @@ void main(int argc, char **argv)
             break;
 
         case 2:
-
-            if (recv(s, &quant_msg, sizeof(quant_msg), 0) < 0)
-            {
-                perror("Recv()");
-                exit(6);
-            }
-
-            
+           
 
             if (recv(s, msg_total, sizeof(struct mensagem) * 10, 0) < 0)
             {
@@ -166,12 +159,6 @@ void main(int argc, char **argv)
             {
                 perror("Send()");
                 exit(5);
-            }
-
-            if (recv(s, &quant_msg, sizeof(quant_msg), 0) < 0)
-            {
-                perror("Recv()");
-                exit(6);
             }
 
             if (recv(s, recvbuf, sizeof(recvbuf), 0) < 0)

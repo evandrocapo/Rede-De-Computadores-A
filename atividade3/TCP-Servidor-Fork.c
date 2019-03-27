@@ -240,23 +240,11 @@ void main(int argc, char **argv)
 					{
 						printf("Enviando as mensagens para o cliente");
 
-						//semafaro INIT
-						//fila REC
-
 						if (semop(g_sem_id, g_sem_op1, 1) == -1)
 						{
 							fprintf(stderr, "semop() falhou, impossivel iniciar o semaforo");
 							exit(1);
 						}
-
-						if (send(ns, &quant_msg, sizeof(quant_msg), 0) < 0)
-						{
-							perror("Send()");
-							exit(5);
-						}
-
-						printf("\nMensagem enviada do Cliente: %s\n", shrd[0].nome);
-						printf("Mensagem enviada do cliente: %s\n", shrd[0].texto);
 
 						if (send(ns, shrd, sizeof(struct mensagem) * 10, 0) < 0)
 						{
@@ -279,7 +267,6 @@ void main(int argc, char **argv)
 								fprintf(stderr, "semop() falhou, impossivel iniciar o semaforo");
 								exit(1);
 							}
-							printf("As mensagens foram apagadas\n");
 
 							if (recv(ns, nome, sizeof(nome), 0) == -1)
 							{
@@ -287,11 +274,11 @@ void main(int argc, char **argv)
 								exit(7);
 							}
 
-							for (i = 0; i < 20; i++)
+							for (i = 0; i < 10; i++)
 							{
-								if (strcmp(msg_total[i].nome, nome) == 0)
+								if (strcmp(shrd[i].nome, nome) == 0)
 								{
-									msg_total[i].ativo = 0;
+									shrd[i].ativo = 0;
 								}
 							}
 
@@ -300,6 +287,8 @@ void main(int argc, char **argv)
 								fprintf(stderr, "semop() falhou, impossivel iniciar o semaforo");
 								exit(1);
 							}
+
+							printf("As mensagens foram apagadas\n");
 
 							strcpy(sendbuf, "As mensagens foram apagadas\n");
 
