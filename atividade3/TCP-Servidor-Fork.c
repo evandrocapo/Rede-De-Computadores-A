@@ -222,10 +222,7 @@ void main(int argc, char **argv)
 							break;
 						}
 					}
-
-					sleep(10);
 					//semaforo END
-
 					strcpy(sendbuf, "Incluso com sucesso!\n");
 
 					if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
