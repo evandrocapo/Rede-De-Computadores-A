@@ -1,6 +1,6 @@
 #!/bin/bash
-porta=5332
+porta=3232
 echo "Executando"
-gnome-terminal -- "program.sh"
 gnome-terminal -- ./servidor $porta
-
+gnome-terminal -- ./cliente 127.0.0.1 $porta
+gnome-terminal -- ./cliente 127.0.0.1 $porta
