@@ -11,6 +11,7 @@
 pthread_t servidor_i;
 //pthread_mutex_t semaforo;
 int opcao;
+int ns;
 
 struct mensagem
 {
@@ -32,10 +33,11 @@ struct mensagem msg_gravada[10]; // variavel global
 	exit(0);
 }*/
 
-void *servidor(void *socket_servidor)
+void *servidor()
 {
     char nome[20], sendbuf[100];
     struct mensagem msg;
+    int socket_servidor = ns;
 
     //close(s);
     do
@@ -63,7 +65,7 @@ void *servidor(void *socket_servidor)
             }
             printf("\nMensagem do cliente: %s\n", msg.nome);
             printf("Mensagem recebida do cliente: %s\n", msg.texto);
-            
+
 
             for (int i = 0; i < 10; i++)
             {
@@ -101,7 +103,7 @@ void *servidor(void *socket_servidor)
         {
             if (opcao == 2)
             {
-                printf("Enviando as mensagens para o cliente");
+                printf("Enviando as mensagens para o cliente\n");
 
                 /*if (pthread_mutex_lock(&semaforo) != 0)
              {
@@ -167,7 +169,7 @@ void *servidor(void *socket_servidor)
     } while (opcao != 4);
     close(socket_servidor);
 
-    printf("Servidor Thread %ld encerrado\n", pthread_self());
+    printf("\nServidor Thread %ld encerrado\n", pthread_self());
     pthread_exit(NULL);
 }
 
@@ -178,7 +180,7 @@ int main(int argc, char **argv)
     struct sockaddr_in server;
     struct mensagem msg_only;
     int namelen, s;
-    long int ns; 
+
 
     /*
      * o primeiro argumento (argv[1]) � a porta
@@ -231,7 +233,7 @@ int main(int argc, char **argv)
     }
 
     //criacao do semaforo da regia critica
-    /*if(pthread_mutex_init(&semaforo, null) != 0) 
+    /*if(pthread_mutex_init(&semaforo, null) != 0)
 	{
 		printf("erro: impossivel criar um mutex\n");
     	exit(5);
@@ -260,12 +262,12 @@ int main(int argc, char **argv)
             perror("accept()");
             exit(5);
         }
-	
+
 	//criar thread
-	if(pthread_create(&servidor_i, NULL, servidor, ns) != 0){	//enviar o pos, ns e o s para o fechamento
+	if(pthread_create(&servidor_i, NULL, servidor, NULL) != 0){	//enviar o pos, ns e o s para o fechamento
 		perror("pthread_create()");
 		exit(6);
-	} 
+	}
     }
- 
+
 }
