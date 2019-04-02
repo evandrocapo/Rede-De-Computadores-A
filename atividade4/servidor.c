@@ -7,9 +7,10 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 pthread_t servidor_i;
-//pthread_mutex_t semaforo;
+pthread_mutex_t semaforo;
 int opcao;
 int ns;
 
@@ -22,16 +23,22 @@ struct mensagem
 
 struct mensagem msg_gravada[10]; // variavel global
 
-/*void intHandHer(int sig)
+void INThandler(int sig)
 {
+    
+    if ((pthread_mutex_lock(&semaforo)) != 0)
+    {
+       fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
+       exit(1);
+    }
 	if ((pthread_mutex_destroy(&semaforo)) != 0)
 	{
-		fprintf(stderr, "Impossivel remover semaforo");
+		fprintf(stderr, "Impossivel remover semaforo\n");
 		exit(1);
 	}
 
 	exit(0);
-}*/
+}
 
 void *servidor()
 {
@@ -52,11 +59,11 @@ void *servidor()
         if (opcao == 1)
         {
 
-             //if (pthread_mutex_lock(&semaforo) != 0)
-             //{
-             	//fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
-             	//exit(1);
-             //}
+             if ((pthread_mutex_lock(&semaforo)) != 0)
+             {
+             	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
+             	exit(1);
+             }
 
             if (recv(socket_servidor, &msg, sizeof(msg), 0) == -1)
             {
@@ -91,11 +98,11 @@ void *servidor()
                 perror("send()");
                 exit(5);
             }
-            // if (pthread_mutex_unlock(&semaforo) != 0)
-             //{
-             	//fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
-             	//exit(1);
-             //}
+             if ((pthread_mutex_unlock(&semaforo)) != 0)
+             {
+             	fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
+             	exit(1);
+             }
             printf("%s\n", sendbuf);
             fflush(stdout);
         }
@@ -105,11 +112,11 @@ void *servidor()
             {
                 printf("Enviando as mensagens para o cliente\n");
 
-                /*if (pthread_mutex_lock(&semaforo) != 0)
-             {
-             	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
-             	exit(1);
-             }*/
+                if ((pthread_mutex_lock(&semaforo)) != 0)
+                {
+             	    fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
+             	    exit(1);
+                }
 
                 if (send(socket_servidor, msg_gravada, sizeof(struct mensagem) * 10, 0) < 0) // alterar para variavel globalizada da globo
                 {
@@ -117,52 +124,52 @@ void *servidor()
                     exit(5);
                 }
 
-                /*if (pthread_mutex_unlock(&semaforo) != 0)
+                if ((pthread_mutex_unlock(&semaforo)) != 0)
                 {
                     fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
                     exit(1);
-                }*/
+                }
             }
             else
             {
                 if (opcao == 3)
                 {
-                /*    if (pthread_mutex_lock(&semaforo) != 0)
-             {
-             	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
-             	exit(1);
-             }*/
-
-                    if (recv(socket_servidor, nome, sizeof(nome), 0) == -1)
+                    if ((pthread_mutex_lock(&semaforo)) != 0)
                     {
-                        perror("recv()");
-                        exit(7);
+                 	    fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
+                 	    exit(1);
                     }
 
-                    for (int i = 0; i < 10; i++)
-                    {
-                        if (strcmp(msg_gravada[i].nome, nome) == 0) // alterar para variavel globalizada da globo
+                        if (recv(socket_servidor, nome, sizeof(nome), 0) == -1)
                         {
-                            msg_gravada[i].ativo = 0; // alterar para variavel globalizada da globo
+                            perror("recv()");
+                            exit(7);
                         }
-                    }
 
-                    /*if (pthread_mutex_unlock(&semaforo) != 0)
-                    {
-                        fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
-                        exit(1);
-                    }*/
+                        for (int i = 0; i < 10; i++)
+                        {
+                            if (strcmp(msg_gravada[i].nome, nome) == 0) // alterar para variavel globalizada da globo
+                            {
+                                msg_gravada[i].ativo = 0; // alterar para variavel globalizada da globo
+                            }
+                        }
 
-                    printf("As mensagens foram apagadas\n");
+                        if ((pthread_mutex_unlock(&semaforo)) != 0)
+                        {
+                            fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
+                            exit(1);
+                        }
 
-                    strcpy(sendbuf, "As mensagens foram apagadas\n");
+                        printf("As mensagens foram apagadas\n");
 
-                    if (send(socket_servidor, sendbuf, sizeof(sendbuf), 0) < 0)
-                    {
+                        strcpy(sendbuf, "As mensagens foram apagadas\n");
 
-                        perror("send()");
-                        exit(5);
-                    }
+                        if (send(socket_servidor, sendbuf, sizeof(sendbuf), 0) < 0)
+                        {
+
+                            perror("send()");
+                            exit(5);
+                        }
                 }
             }
         }
@@ -233,17 +240,17 @@ int main(int argc, char **argv)
     }
 
     //criacao do semaforo da regia critica
-    /*if(pthread_mutex_init(&semaforo, null) != 0)
+    if((pthread_mutex_init(&semaforo, NULL)) != 0)
 	{
 		printf("erro: impossivel criar um mutex\n");
     	exit(5);
 	}
 
-    if (pthread_mutex_unlock(&semaforo) != 0)
+    if ((pthread_mutex_unlock(&semaforo)) != 0)
     {
         fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
         exit(6);
-    }*/
+    }
 
     /*
      * aceita uma conex�o e cria um novo socket atrav�s do qual
@@ -252,22 +259,22 @@ int main(int argc, char **argv)
 
     namelen = sizeof(client);
 
-    //signal(sigint, inthandler);
+    signal(SIGINT, INThandler);
 
     while (1)
     {
-        namelen = sizeof(client);
-        if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
-        {
-            perror("accept()");
-            exit(5);
-        }
+            namelen = sizeof(client);
+            if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
+            {
+                perror("accept()");
+                exit(5);
+            }
 
-	//criar thread
-	if(pthread_create(&servidor_i, NULL, servidor, NULL) != 0){	//enviar o pos, ns e o s para o fechamento
-		perror("pthread_create()");
-		exit(6);
-	}
+    	//criar thread
+    	if(pthread_create(&servidor_i, NULL, servidor, NULL) != 0){	//enviar o pos, ns e o s para o fechamento
+    		perror("pthread_create()");
+    		exit(6);
+    	}
     }
 
 }
