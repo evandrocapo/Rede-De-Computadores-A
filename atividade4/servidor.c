@@ -1,10 +1,3 @@
-/*
-Agostinho Sanches de Araújo ----------------------------- RA: 16507915
-Evandro Douglas Capovilla Junior ------------------------ RA: 16023905
-Lucas Tenani Felix Martins ------------------------------ RA: 16105744
-Pedro Andrade Caccavaro --------------------------------- RA: 16124679
-*/
-
 #include <pthread.h>
 #include <stdio.h>
 #include <stdio_ext.h>
@@ -15,10 +8,9 @@ Pedro Andrade Caccavaro --------------------------------- RA: 16124679
 #include <string.h>
 #include <unistd.h>
 
-#define NUM_THREADS 5
-
-pthread_t servidor_i[NUM_THREADS];
-pthread_mutex_t semaforo;
+pthread_t servidor_i;
+//pthread_mutex_t semaforo;
+int opcao;
 
 struct mensagem
 {
@@ -27,80 +19,81 @@ struct mensagem
     int ativo;
 };
 
-struct mensagem msg[10]; // variavel global
+struct mensagem msg_gravada[10]; // variavel global
 
-void INThandler(int sig)
+/*void intHandHer(int sig)
 {
-	if (pthread_mutex_destroy(&semaforo)) != 0)
+	if ((pthread_mutex_destroy(&semaforo)) != 0)
 	{
-		fprintf(stderr, "impossivel remover semaforo");
+		fprintf(stderr, "Impossivel remover semaforo");
 		exit(1);
 	}
 
 	exit(0);
-}
+}*/
 
-void *servidor(void *thread_id)
+void *servidor(void *socket_servidor)
 {
-    int ns, opcao;
     char nome[20], sendbuf[100];
     struct mensagem msg;
 
+    //close(s);
     do
     {
 
-        if (recv(ns, &opcao, sizeof(opcao), 0) == -1)
+        if (recv(socket_servidor, &opcao, sizeof(opcao), 0) == -1)
         {
-            perror("Recv()");
+            perror("recv()");
             exit(6);
         }
 
         if (opcao == 1)
         {
 
-             if (pthread_mutex_lock(&semaforo) != 0)
-             {
-             	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
-             	exit(1);
-             }
+             //if (pthread_mutex_lock(&semaforo) != 0)
+             //{
+             	//fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
+             	//exit(1);
+             //}
 
-            if (recv(ns, &msg, sizeof(msg), 0) == -1)
+            if (recv(socket_servidor, &msg, sizeof(msg), 0) == -1)
             {
-                perror("Recv()");
+                perror("recv()");
                 exit(7);
             }
-            printf("\nMensagem do Cliente: %s\n", msg.nome);
+            printf("\nMensagem do cliente: %s\n", msg.nome);
             printf("Mensagem recebida do cliente: %s\n", msg.texto);
+            
 
             for (int i = 0; i < 10; i++)
             {
-                if (shrd[i].ativo == 0) // alterar para variavel globalizada da globo
+                if (msg_gravada[i].ativo == 0) // alterar para variavel globalizada da globo
                 {
-                    shrd[i] = msg; // alterar para variavel globalizada da globo
+                    msg_gravada[i] = msg; // alterar para variavel globalizada da globo
                     strcpy(sendbuf, "Incluso com sucesso!\n");
                     break;
                 }
                 else
                 {
-                    if (i == 9 && shrd[i].ativo == 1)
+                    if (i == 9 && msg_gravada[i].ativo == 1)
                     {
                         strcpy(sendbuf, "A mensagem não foi inclusa!\n");
                         break;
                     }
                 }
             }
-            //semaforo END
+            //semaforo end
 
-            if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
+            if (send(socket_servidor, sendbuf, sizeof(sendbuf), 0) < 0)
             {
-                perror("Send()");
+                perror("send()");
                 exit(5);
             }
-             if (pthread_mutex_unlock(&semaforo) != 0)
-             {
-             	fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
-             	exit(1);
-             }
+            // if (pthread_mutex_unlock(&semaforo) != 0)
+             //{
+             	//fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
+             	//exit(1);
+             //}
             printf("%s\n", sendbuf);
             fflush(stdout);
         }
@@ -110,71 +103,71 @@ void *servidor(void *thread_id)
             {
                 printf("Enviando as mensagens para o cliente");
 
-                if (pthread_mutex_lock(&semaforo) != 0)
+                /*if (pthread_mutex_lock(&semaforo) != 0)
              {
              	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
              	exit(1);
-             }
+             }*/
 
-                if (send(ns, shrd, sizeof(struct mensagem) * 10, 0) < 0) // alterar para variavel globalizada da globo
+                if (send(socket_servidor, msg_gravada, sizeof(struct mensagem) * 10, 0) < 0) // alterar para variavel globalizada da globo
                 {
-                    perror("Send()");
+                    perror("send()");
                     exit(5);
                 }
 
-                if (pthread_mutex_unlock(&semaforo) != 0)
+                /*if (pthread_mutex_unlock(&semaforo) != 0)
                 {
                     fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
                     exit(1);
-                }
+                }*/
             }
             else
             {
-                if (opcao = 3)
+                if (opcao == 3)
                 {
-                    if (pthread_mutex_lock(&semaforo) != 0)
+                /*    if (pthread_mutex_lock(&semaforo) != 0)
              {
              	fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
              	exit(1);
-             }
+             }*/
 
-                    if (recv(ns, nome, sizeof(nome), 0) == -1)
+                    if (recv(socket_servidor, nome, sizeof(nome), 0) == -1)
                     {
-                        perror("Recv()");
+                        perror("recv()");
                         exit(7);
                     }
 
-                    for (i = 0; i < 10; i++)
+                    for (int i = 0; i < 10; i++)
                     {
-                        if (strcmp(shrd[i].nome, nome) == 0) // alterar para variavel globalizada da globo
+                        if (strcmp(msg_gravada[i].nome, nome) == 0) // alterar para variavel globalizada da globo
                         {
-                            shrd[i].ativo = 0; // alterar para variavel globalizada da globo
+                            msg_gravada[i].ativo = 0; // alterar para variavel globalizada da globo
                         }
                     }
 
-                    if (pthread_mutex_unlock(&semaforo) != 0)
+                    /*if (pthread_mutex_unlock(&semaforo) != 0)
                     {
                         fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
                         exit(1);
-                    }
+                    }*/
 
                     printf("As mensagens foram apagadas\n");
 
                     strcpy(sendbuf, "As mensagens foram apagadas\n");
 
-                    if (send(ns, sendbuf, sizeof(sendbuf), 0) < 0)
+                    if (send(socket_servidor, sendbuf, sizeof(sendbuf), 0) < 0)
                     {
 
-                        perror("Send()");
+                        perror("send()");
                         exit(5);
                     }
                 }
             }
         }
     } while (opcao != 4);
-    close(ns);
+    close(socket_servidor);
 
-    printf("Servidor %ld encerrado", thread_id);
+    printf("Servidor Thread %ld encerrado\n", pthread_self());
     pthread_exit(NULL);
 }
 
@@ -184,61 +177,63 @@ int main(int argc, char **argv)
     struct sockaddr_in client;
     struct sockaddr_in server;
     struct mensagem msg_only;
-    long int pos = 0, i, opcao, s, namelen, ns; // passar como parametro pro thread ( precisar ser long int)
+    int namelen, s;
+    long int ns; 
 
     /*
-     * O primeiro argumento (argv[1]) � a porta
+     * o primeiro argumento (argv[1]) � a porta
      * onde o servidor aguardar� por conex�es
      */
     if (argc != 2)
     {
-        fprintf(stderr, "Use: %s porta\n", argv[0]);
+        fprintf(stderr, "use: %s porta\n", argv[0]);
         exit(1);
     }
 
     port = (unsigned short)atoi(argv[1]);
 
     /*
-     * Cria um socket TCP (stream) para aguardar conex�es
+     * cria um socket tcp (stream) para aguardar conex�es
      */
     if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("Socket()");
+        perror("socket()");
         exit(2);
     }
 
     /*
-    * Define a qual endere�o IP e porta o servidor estar� ligado.
-    * IP = INADDDR_ANY -> faz com que o servidor se ligue em todos
-    * os endere�os IP
+    * define a qual endere�o ip e porta o servidor estar� ligado.
+    * ip = inadddr_any -> faz com que o servidor se ligue em todos
+    * os endere�os ip
     */
+
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
     server.sin_addr.s_addr = INADDR_ANY;
 
     /*
-     * Liga o servidor � porta definida anteriormente.
+     * liga o servidor � porta definida anteriormente.
      */
     if (bind(s, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
-        perror("Bind()");
+        perror("bind()");
         exit(3);
     }
 
     /*
-     * Prepara o socket para aguardar por conex�es e
+     * prepara o socket para aguardar por conex�es e
      * cria uma fila de conex�es pendentes.
      */
     if (listen(s, 1) != 0)
     {
-        perror("Listen()");
+        perror("listen()");
         exit(4);
     }
 
-    //Criacao do semaforo da Regia Critica
-    if(pthread_mutex_init(&semaforo, NULL) != 0) 
+    //criacao do semaforo da regia critica
+    /*if(pthread_mutex_init(&semaforo, null) != 0) 
 	{
-		printf("ERRO: Impossivel criar um mutex\n");
+		printf("erro: impossivel criar um mutex\n");
     	exit(5);
 	}
 
@@ -246,32 +241,31 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "pthread_mutex_unlock() falhou, impossivel iniciar o semaforo");
         exit(6);
-    }
+    }*/
 
     /*
-     * Aceita uma conex�o e cria um novo socket atrav�s do qual
+     * aceita uma conex�o e cria um novo socket atrav�s do qual
      * ocorrer� a comunica��o com o cliente.
      */
+
     namelen = sizeof(client);
 
-    signal(SIGINT, INThandler);
+    //signal(sigint, inthandler);
 
     while (1)
     {
         namelen = sizeof(client);
         if ((ns = accept(s, (struct sockaddr *)&client, &namelen)) == -1)
         {
-            perror("Accept()");
+            perror("accept()");
             exit(5);
         }
+	
+	//criar thread
+	if(pthread_create(&servidor_i, NULL, servidor, ns) != 0){	//enviar o pos, ns e o s para o fechamento
+		perror("pthread_create()");
+		exit(6);
+	} 
     }
-
-    //criar
-    for (i = 0; i < 10; i++)
-    {
-        pthread_create(&servidor_i[pos], NULL, servidor, (void *)pos); //enviar o POS, NS e o S para o fechamento 
-        pos++;
-    }
-
-    sleep(5);
+ 
 }
