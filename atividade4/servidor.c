@@ -25,15 +25,16 @@ struct mensagem msg_gravada[10]; // variavel global
 
 void INThandler(int sig)
 {
-    
+    int x;
     if ((pthread_mutex_lock(&semaforo)) != 0)
     {
        fprintf(stderr, "pthread_mutex_lock() falhou, impossivel fechar o semaforo");
        exit(1);
     }
-	if ((pthread_mutex_destroy(&semaforo)) != 0)
+	if ((x =pthread_mutex_destroy(&semaforo)) != 0)
 	{
 		fprintf(stderr, "Impossivel remover semaforo\n");
+        printf("%d\n", x);
 		exit(1);
 	}
 
